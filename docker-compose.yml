@@ -1,0 +1,63 @@
+# Run using `docker-compose up`
+version: "3"
+
+services:
+  mediawiki:
+    container_name: mediawiki
+    build: ./app
+    ports:
+      - "80:80"
+    links:
+      - mysql
+      #- rest
+      - es
+    volumes:
+      # Inject our specific settings
+      - ./mediawiki:/var/www/public/mediawiki
+    environment:
+      - MEDIAWIKI_SITE_NAME=CitolyticsDemo
+      - MEDIAWIKI_SITE_SCRIPTPATH=/mediawiki
+      - MEDIAWIKI_ADMIN_USER=admin
+      - MEDIAWIKI_ADMIN_PASS=citolytics
+      - MEDIAWIKI_DB_SERVER=mysql
+      - MEDIAWIKI_DB_NAME=mediawiki
+      - MEDIAWIKI_DB_USER=root
+      - MEDIAWIKI_DB_PASSWORD=password
+
+    networks:
+      - backend
+
+  mysql:
+    container_name: mysql
+    image: mariadb
+    volumes:
+      # needs chmod 777
+      - ./mysql_data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=mediawiki
+      - MYSQL_USER=mediawiki
+      - MYSQL_PASSWORD=mediawiki
+    networks:
+      - backend
+
+  es:
+    container_name: es
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.4.0
+    # For older MediaWiki versions (e.g. REL1_28) use ES <= 2.4.5
+    # image: elasticsearch:2.4.5
+    environment:
+      - cluster.name=mediawiki
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      - http.host=0.0.0.0
+      - transport.host=127.0.0.1
+      - xpack.security.enabled=false
+
+    volumes:
+      # chmod 777 the es_data directory so ES can write
+      - ./es_data:/usr/share/elasticsearch/data
+    networks:
+      - backend
+
+networks:
+  backend:
