@@ -14,8 +14,6 @@ WORKDIR /var/www/public/mediawiki
 COPY ./conf/nginx/nginx-site.conf /etc/nginx/sites-enabled/default
 COPY ./conf/mediawiki/CustomSettings.php $WEBROOT/CustomSettings.php
 
-#COPY ./mediawiki /var/www/public/mediawiki
-
 # ADD elasticsearch.yml /usr/share/elasticsearch/config/
 # USER root
 # RUN chown elasticsearch:elasticsearch config/elasticsearch.yml
