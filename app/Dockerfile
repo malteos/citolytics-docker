@@ -14,10 +14,13 @@ WORKDIR /var/www/public/mediawiki
 COPY ./conf/nginx/nginx-site.conf /etc/nginx/sites-enabled/default
 COPY ./conf/mediawiki/CustomSettings.php $WEBROOT/CustomSettings.php
 
+COPY get-data.sh /get-data.sh
+
 # ADD elasticsearch.yml /usr/share/elasticsearch/config/
 # USER root
 # RUN chown elasticsearch:elasticsearch config/elasticsearch.yml
 # USER elasticsearch
 
 COPY docker-entrypoint.sh /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
+#ENTRYPOINT ["/entrypoint.sh"]
+CMD /entrypoint.sh

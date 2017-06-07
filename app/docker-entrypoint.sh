@@ -17,8 +17,7 @@ set -e
 if [ -d "$MEDIAWIKI_DIR" ]; then
   # Control will enter here if $DIRECTORY exists.
   rm -fr $MEDIAWIKI_DIR/*
-  rm -fr $MEDIAWIKI_DIR/.git/
-  #rm -fr $MEDIAWIKI_DIR/.* 2> /dev/null
+  rm -fr $MEDIAWIKI_DIR/.* || echo "Hidden files deleted from $MEDIAWIKI_DIR"
 fi
 
 # Install Mediawiki core
@@ -83,3 +82,5 @@ php $MEDIAWIKI_DIR/extensions/CirrusSearch/maintenance/forceSearchIndex.php --sk
 php $MEDIAWIKI_DIR/maintenance/update.php --quick
 php $MEDIAWIKI_DIR/extensions/Wikibase/lib/maintenance/populateSitesTable.php
 php $MEDIAWIKI_DIR/extensions/Wikibase/client/maintenance/populateInterwiki.php
+
+echo "Setup complete. Run get-data.sh script to load demo data."
