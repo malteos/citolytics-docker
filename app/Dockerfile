@@ -6,8 +6,7 @@ FROM webdevops/php-nginx:ubuntu-16.04
 #
 RUN set -x; \
   apt-get update \
-  && apt-get install -y python-pip libmysqlclient-dev \
-  && pip install -r /eventlogging/requirements.txt
+  && apt-get install -y python-pip libmysqlclient-dev
 
 ENV WEBROOT /var/www/
 ENV MEDIAWIKI_DIR /var/www/public/mediawiki

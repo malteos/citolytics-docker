@@ -90,4 +90,7 @@ php $MEDIAWIKI_DIR/maintenance/update.php --quick
 php $MEDIAWIKI_DIR/extensions/Wikibase/lib/maintenance/populateSitesTable.php
 php $MEDIAWIKI_DIR/extensions/Wikibase/client/maintenance/populateInterwiki.php
 
+# Install EventLogging dependices
+pip install -r /eventlogging/requirements.txt
+
 echo "Setup complete. Run get-data.sh script to load demo data."
