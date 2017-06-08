@@ -1,6 +1,6 @@
-# Docker Container for Citolytics
+# Docker Container for Citolytics (WIP)
 
-Containerized [MediaWiki](https://mediawiki.org) setup + [Citolytics](https://github.com/wikimedia/citolytics) demo.
+Containerized [MediaWiki](https://mediawiki.org) setup + [Citolytics](https://github.com/wikimedia/citolytics) demo. ***WARNING:*** This container is still under development.
 
 ## Requirements
 
@@ -18,8 +18,19 @@ chmod 777 es_data
 sudo docker-compose up
 ```
 
+## Download and import Wikipedia and Citolytics data
+
+```
+docker run -it mediawiki /get-data.sh
+```
+
+## Import EventLogging data
+
+This following command runs the EventLogging parser script in the MediaWiki container and sends the date to the MySQL container.
+```
+docker run -it mediawiki /eventlogging/process_logs.py --db-host mysql
+```
+
 ## TODO
 
 - Tests
-- Import CirrusSearch/Citolytics data
-- EventLogging parser

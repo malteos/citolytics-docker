@@ -3,6 +3,7 @@
 # Print commands
 set -e
 
+: ${MEDIAWIKI_OVERRIDE:=true}
 : ${MEDIAWIKI_SITE_NAME:=CitolyticsDemo}
 : ${MEDIAWIKI_SITE_SCRIPTPATH:=/mediawiki}
 : ${MEDIAWIKI_ADMIN_USER:=admin}
@@ -16,8 +17,12 @@ set -e
 
 if [ -d "$MEDIAWIKI_DIR" ]; then
   # Control will enter here if $DIRECTORY exists.
-  rm -fr $MEDIAWIKI_DIR/*
-  rm -fr $MEDIAWIKI_DIR/.* || echo "Hidden files deleted from $MEDIAWIKI_DIR"
+  if [ "$MEDIAWIKI_OVERRIDE" == true ]; then
+    rm -fr $MEDIAWIKI_DIR/*
+    rm -fr $MEDIAWIKI_DIR/.* || echo "Hidden files deleted from $MEDIAWIKI_DIR"
+  else
+    exit 0
+  fi
 fi
 
 # Install Mediawiki core
@@ -30,7 +35,7 @@ cd $MEDIAWIKI_DIR
 array=( Modern Vector )
 for EXT in "${array[@]}"
 do
-  if [ ! -d "/var/www/public/mediawiki/extensions/$EXT" ];then
+  if [ ! -d "/var/www/public/mediawiki/extensions/$EXT" ]; then
   	git clone -b $MEDIAWIKI_BRANCH https://gerrit.wikimedia.org/r/p/mediawiki/skins/$EXT $MEDIAWIKI_DIR/skins/$EXT
     cd $MEDIAWIKI_DIR/skins/$EXT && composer install --no-dev
     cd $MEDIAWIKI_DIR
@@ -48,6 +53,8 @@ do
     cd $MEDIAWIKI_DIR
   fi
 done
+
+# Use Citolytics patch for CirrusSearch
 
 # EventLogging server
 cd $MEDIAWIKI_DIR/extensions/EventLogging/server && git submodule update --init

@@ -9,11 +9,12 @@ services:
       - "80:80"
     links:
       - mysql
-      #- rest
-      - es
+      #- es
     volumes:
       # Inject our specific settings
       - ./mediawiki:/var/www/public/mediawiki
+      - ./eventlogging:/eventlogging
+
     environment:
       - MEDIAWIKI_SITE_NAME=CitolyticsDemo
       - MEDIAWIKI_SITE_SCRIPTPATH=/mediawiki
@@ -23,6 +24,8 @@ services:
       - MEDIAWIKI_DB_NAME=mediawiki
       - MEDIAWIKI_DB_USER=root
       - MEDIAWIKI_DB_PASSWORD=password
+
+      - MEDIAWIKI_OVERRIDE=false
 
     networks:
       - backend
@@ -41,23 +44,23 @@ services:
     networks:
       - backend
 
-  es:
-    container_name: es
-    image: docker.elastic.co/elasticsearch/elasticsearch:5.4.0
-    # For older MediaWiki versions (e.g. REL1_28) use ES <= 2.4.5
-    # image: elasticsearch:2.4.5
-    environment:
-      - cluster.name=mediawiki
-      - cluster.routing.allocation.disk.threshold_enabled=false
-      - http.host=0.0.0.0
-      - transport.host=127.0.0.1
-      - xpack.security.enabled=false
-
-    volumes:
-      # chmod 777 the es_data directory so ES can write
-      - ./es_data:/usr/share/elasticsearch/data
-    networks:
-      - backend
+  # es:
+  #   container_name: es
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:5.4.0
+  #   # For older MediaWiki versions (e.g. REL1_28) use ES <= 2.4.5
+  #   # image: elasticsearch:2.4.5
+  #   environment:
+  #     - cluster.name=mediawiki
+  #     - cluster.routing.allocation.disk.threshold_enabled=false
+  #     - http.host=0.0.0.0
+  #     - transport.host=127.0.0.1
+  #     - xpack.security.enabled=false
+  #
+  #   volumes:
+  #     # chmod 777 the es_data directory so ES can write
+  #     - ./es_data:/usr/share/elasticsearch/data
+  #   networks:
+  #     - backend
 
 networks:
   backend:

@@ -21,6 +21,7 @@ $wgSearchType = 'CirrusSearch';
 
 # Enable Citolytics
 $wgCirrusSearchEnableCitolytics = true;
+$wgCirrusSearchDevelOptions['ignore_missing_rev'] = True;
 
 
 // MobileApp
