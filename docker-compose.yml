@@ -24,8 +24,10 @@ services:
       - MEDIAWIKI_DB_NAME=mediawiki
       - MEDIAWIKI_DB_USER=root
       - MEDIAWIKI_DB_PASSWORD=password
-
       - MEDIAWIKI_OVERRIDE=false
+
+      - ES_HOST=es
+      - BATCH_SIZE=1000
 
     networks:
       - backend

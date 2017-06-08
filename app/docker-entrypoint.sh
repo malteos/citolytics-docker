@@ -59,6 +59,7 @@ do
 done
 
 # Use Citolytics patch for CirrusSearch
+cd $MEDIAWIKI_DIR/extensions/CirrusSearch && git fetch https://gerrit.wikimedia.org/r/mediawiki/extensions/CirrusSearch refs/changes/26/329626/8 && git checkout FETCH_HEAD
 
 # EventLogging server
 cd $MEDIAWIKI_DIR/extensions/EventLogging/server && git submodule update --init
@@ -74,7 +75,7 @@ php $MEDIAWIKI_DIR/maintenance/install.php \
 	"$MEDIAWIKI_SITE_NAME" \
 	"$MEDIAWIKI_ADMIN_USER"
 
-
+# Append settings
 echo "@include('$WEBROOT/CustomSettings.php');" >> $MEDIAWIKI_DIR/LocalSettings.php
 
 # CirrusSearch

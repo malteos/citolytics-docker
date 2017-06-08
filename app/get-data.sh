@@ -21,7 +21,8 @@ for f in $MEDIAWIKI_DIR/data/cirrus.splits.d/{.,}*; do curl -XPOST $ES_HOST:9200
 
 # Popupate Citolytics data to ES
 
-wget $CITOLYTICS_DUMP_URL -O citolytics.json
+wget $CITOLYTICS_DUMP_URL -O $MEDIAWIKI_DIR/data/citolytics.json.gz
+zcat $MEDIAWIKI_DIR/data/citolytics.json.gz > $MEDIAWIKI_DIR/data/citolytics.json
 mkdir $MEDIAWIKI_DIR/data/citolytics.splits.d
 split -l $BATCH_SIZE $MEDIAWIKI_DIR/data/citolytics.json $MEDIAWIKI_DIR/data/citolytics.splits.d/
 for f in $MEDIAWIKI_DIR/data/citolytics.splits.d/{.,}*; do curl -XPOST $ES_HOST:9200/mediawiki_content_first/page/_bulk?pretty --data-binary @$f; done
