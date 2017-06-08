@@ -44,23 +44,23 @@ services:
     networks:
       - backend
 
-  # es:
-  #   container_name: es
-  #   image: docker.elastic.co/elasticsearch/elasticsearch:5.4.0
-  #   # For older MediaWiki versions (e.g. REL1_28) use ES <= 2.4.5
-  #   # image: elasticsearch:2.4.5
-  #   environment:
-  #     - cluster.name=mediawiki
-  #     - cluster.routing.allocation.disk.threshold_enabled=false
-  #     - http.host=0.0.0.0
-  #     - transport.host=127.0.0.1
-  #     - xpack.security.enabled=false
-  #
-  #   volumes:
-  #     # chmod 777 the es_data directory so ES can write
-  #     - ./es_data:/usr/share/elasticsearch/data
-  #   networks:
-  #     - backend
+  es:
+    container_name: es
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.4.0
+    # For older MediaWiki versions (e.g. REL1_28) use ES <= 2.4.5
+    # image: elasticsearch:2.4.5
+    environment:
+      - cluster.name=mediawiki
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      - http.host=0.0.0.0
+      - transport.host=127.0.0.1
+      - xpack.security.enabled=false
+
+    volumes:
+      # chmod 777 the es_data directory so ES can write
+      - ./es_data:/usr/share/elasticsearch/data
+    networks:
+      - backend
 
 networks:
   backend:
