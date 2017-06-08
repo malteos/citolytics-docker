@@ -13,14 +13,18 @@ set -e
 : ${MEDIAWIKI_DB_USER:=root}
 : ${MEDIAWIKI_DB_PASSWORD:=password}
 
-#mkdir -p $MEDIAWIKI_DIR
+# Install EventLogging dependices
+pip install -r /eventlogging/requirements.txt
 
+# MediaWiki exists already?
 if [ -d "$MEDIAWIKI_DIR" ]; then
   # Control will enter here if $DIRECTORY exists.
   if [ "$MEDIAWIKI_OVERRIDE" == true ]; then
+    echo "MEDIAWIKI_DIR exist already. Override is enabled."
     rm -fr $MEDIAWIKI_DIR/*
     rm -fr $MEDIAWIKI_DIR/.* || echo "Hidden files deleted from $MEDIAWIKI_DIR"
   else
+    echo "MEDIAWIKI_DIR exist already. Override is disabled."
     exit 0
   fi
 fi
@@ -89,8 +93,5 @@ php $MEDIAWIKI_DIR/extensions/CirrusSearch/maintenance/forceSearchIndex.php --sk
 php $MEDIAWIKI_DIR/maintenance/update.php --quick
 php $MEDIAWIKI_DIR/extensions/Wikibase/lib/maintenance/populateSitesTable.php
 php $MEDIAWIKI_DIR/extensions/Wikibase/client/maintenance/populateInterwiki.php
-
-# Install EventLogging dependices
-pip install -r /eventlogging/requirements.txt
 
 echo "Setup complete. Run get-data.sh script to load demo data."

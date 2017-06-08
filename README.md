@@ -14,7 +14,7 @@ Run the following commands (as root) and afterwards the MediaWiki will be availa
 git clone https://github.com/mschwarzer/citolytics-docker
 cd citolytics-docker
 mkdir es_data
-chmod 777 es_data
+chmod 777 -R es_data eventlogging
 sudo docker-compose up
 ```
 
