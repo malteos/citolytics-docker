@@ -3,7 +3,7 @@
 set -e
 
 : ${ES_HOST:=es}
-: ${CIRRUS_DUMP_URL:=https://dumps.wikimedia.org/other/cirrussearch/20170109/simplewiki-20170109-cirrussearch-content.json.gz}
+: ${CIRRUS_DUMP_URL:=https://dumps.wikimedia.org/other/cirrussearch/20170605/simplewiki-20170109-cirrussearch-content.json.gz}
 : ${CITOLYTICS_DUMP_URL:=http://citolytics-demo.wmflabs.org/dumps/citolytics_simplewiki.json.gz}
 : ${BATCH_SIZE:=1000}
 
