@@ -7,13 +7,13 @@ DB_SERVER=$MEDIAWIKI_DB_SERVER
 DB_USER="mediawiki" #$MEDIAWIKI_DB_USER
 DB_PASSWORD="mediawiki" #$MEDIAWIKI_DB_USER
 DB_NAME=$MEDIAWIKI_DB_NAME
+BATCH_SIZE=50
 
 export MYSQL_PWD=$DB_PASSWORD
 
-#mysql_config_editor set --login-path=local --host=$DB_SERVER --user=$DB_USER --password=$DB_PASSWORD
 mysql -u $DB_USER -h $DB_SERVER -e "DELETE FROM page WHERE page_id > 1; DELETE FROM revision WHERE rev_id > 1; DELETE FROM text WHERE old_id > 1;" $DB_NAME
 
-TS=`date +"%s"`
+TS=`date +"%s"` # TODO MediaWiki does not use unix timestamp
 
 counter=1
 total=`cat $1 | wc -l`
@@ -29,31 +29,47 @@ while IFS='' read -r line || [[ -n "$line" ]]; do
                 TITLE=${TITLE// /_} # replace whitespaces with underscores
                 TITLE=$(printf '%q' $TITLE) # escape double quotes
 
-                #echo "id=$ID; title=$TITLE"
                 TEXT="Dummy text for $TITLE"
                 LEN=${#TEXT}
-                #mysql -u $DB_USER -p$DB_PASSWORD -h $DB_SERVER -e 'SELECT COUNT(*) FROM page;' $DB_NAME
-                #mysql --login-path=local -e 'SELECT COUNT(*) FROM page;' $DB_NAME
 
-                query_page="INSERT INTO page SET page_id=$ID, page_title=\"$TITLE\", page_is_new=1, page_random=RAND(), page_touched=$TS, page_links_updated=$TS, page_latest=$ID, page_len=$LEN, page_content_model=\"wikitext\";"
-                query_rev="INSERT INTO revision SET rev_id=$ID, rev_page=$ID, rev_text_id=$ID, rev_comment=\"CirrusSearch dump\", rev_user=1, rev_user_text=\"Admin\", rev_timestamp=$TS, rev_len=$LEN, rev_parent_id=0, rev_sha1=SHA1(\"$ID\");"
-                query_text="INSERT INTO text SET old_id=$ID, old_text=\"$TEXT\", old_flags=\"utf-8\";"
+                page_values="($ID, \"$TITLE\", 1, RAND(), $TS, $TS, $ID, $LEN, \"wikitext\")"
+                rev_values="($ID, $ID, $ID, \"CirrusSearch dump\", 1, \"Admin\", $TS, $LEN, 0, SHA1(\"$ID\"))"
+                text_values="($ID, \"$TEXT\", \"utf-8\")"
 
-                mysql -u $DB_USER -h $DB_SERVER -e "$query_page$query_rev$query_text" $DB_NAME > /dev/null
+                if [ -z "$query_page" ]; then
+                        query_page="INSERT INTO page (page_id, page_title, page_is_new, page_random, page_touched, page_links_updated, page_latest, page_len, page_content_model) VALUES $page_values"
+                else
+                        query_page="$query_page, $page_values"
+                fi
 
-                #mysql -u $DB_USER -p$DB_PASSWORD -h $DB_SERVER -e "INSERT INTO page SET page_id=$ID, page_title=\"$TITLE\", page_is_new=1, page_random=RAND(), page_touched=$TS, page_links_updated=$TS, page_latest=$ID, page_len=$LEN, page_content_model=\"wikitext\";" $DB_NAME
-                #mysql -u $DB_USER -p$DB_PASSWORD -h $DB_SERVER -e "INSERT INTO revision SET rev_id=$ID, rev_page=$ID, rev_text_id=$ID, rev_comment=\"CirrusSearch dump\", rev_user=1, rev_user_text=\"Admin\", rev_timestamp=$TS, rev_len=$LEN, rev_parent_id=0, rev_sha1=SHA1(\"$ID\");" $DB_NAME
-                #mysql -u $DB_USER -p$DB_PASSWORD -h $DB_SERVER -e "INSERT INTO text SET old_id=$ID, old_text=\"$TEXT\", old_flags=\"utf-8\";" $DB_NAME
+                if [ -z "$query_rev" ]; then
+                        query_rev="INSERT INTO revision (rev_id, rev_page, rev_text_id, rev_comment, rev_user, rev_user_text, rev_timestamp, rev_len, rev_parent_id, rev_sha1) VALUES $rev_values"
+                else
+                        query_rev="$query_rev, $rev_values"
+                fi
+
+                if [ -z "$query_text" ]; then
+                        query_text="INSERT INTO text (old_id, old_text, old_flags) VALUES $text_values"
+                else
+                        query_text="$query_text, $text_values"
+                fi
+
+                if ! ((counter % $BATCH_SIZE)); then
+                        mysql -u $DB_USER -h $DB_SERVER -e "$query_page; $query_rev; $query_text" $DB_NAME
+                        unset query_page
+                        unset query_rev
+                        unset query_text
+                fi
 
                 echo "--- $counter / $total"
-                #echo "INSERT INTO page SET page_id=$ID, page_title=\"$TITLE\", page_is_new=1, page_random=RAND(), page_touched=$TS, page_latest=105, page_content_model=\"wikitext\";"
-                #echo "INSERT INTO text SET old_id=$ID, old_text=\"Dummy text for $TITLE\", old_flags=\"utf-8\";"
-                #echo "INSERT INTO revision SET rev_id=$ID, rev_page=$ID, rev_text_id=$ID, rev_comment=\"CirrusSearch dump\", rev_user=1, rev_user_text=\"Admin\", rev_timestamp=$TS, rev_sha1=SHA1(\"$ID\");"
-
-
                 unset action
         fi
         ((counter++))
 done < "$1"
+
+# Last batch
+if ! [ -z "$query_rev" ]; then
+        mysql -u $DB_USER -h $DB_SERVER -e "$query_page; $query_rev; $query_text" $DB_NAME
+fi
 
 export MYSQL_PWD=
