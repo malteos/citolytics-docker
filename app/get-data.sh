@@ -19,6 +19,9 @@ mkdir $MEDIAWIKI_DIR/data/cirrus.splits.d
 split -l $BATCH_SIZE $MEDIAWIKI_DIR/data/cirrus.json $MEDIAWIKI_DIR/data/cirrus.splits.d/
 for f in $MEDIAWIKI_DIR/data/cirrus.splits.d/{.,}*; do curl -XPOST $ES_HOST:9200/mediawiki_content_first/page/_bulk?pretty --data-binary @$f; done
 
+# $MEDIAWIKI_DIR/cirrus2mysql.sh $MEDIAWIKI_DIR/data/cirrus.json
+/cirrus2mysql.sh $MEDIAWIKI_DIR/data/cirrus.json
+
 # Popupate Citolytics data to ES
 
 wget $CITOLYTICS_DUMP_URL -O $MEDIAWIKI_DIR/data/citolytics.json.gz

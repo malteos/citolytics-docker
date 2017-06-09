@@ -2,6 +2,10 @@
 
 // append to LocalSettings.php
 
+// Logo
+$wgLogo = "$wgResourceBasePath/resources/assets/graph-logo.png";
+
+
 // EventLogging
 require_once "$IP/extensions/EventLogging/EventLogging.php";
 $wgEventLoggingBaseUri = 'http://localhost:8080/event.gif';

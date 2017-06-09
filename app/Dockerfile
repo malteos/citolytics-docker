@@ -6,7 +6,7 @@ FROM webdevops/php-nginx:ubuntu-16.04
 #
 RUN set -x; \
   apt-get update \
-  && apt-get install -y less vim python-pip libmysqlclient-dev
+  && apt-get install -y less vim python-pip libmysqlclient-dev jq mysql-client
 
 ENV WEBROOT /var/www/
 ENV MEDIAWIKI_DIR /var/www/public/mediawiki
@@ -23,6 +23,8 @@ COPY ./conf/nginx/vhost.conf /opt/docker/etc/nginx/vhost.conf
 COPY ./conf/mediawiki/CustomSettings.php $WEBROOT/CustomSettings.php
 
 COPY get-data.sh /get-data.sh
+COPY cirrus2mysql.sh /cirrus2mysql.sh
+COPY graph-logo.png $MEDIAWIKI_DIR/resources/assets/graph-logo.png
 
 # Restart nginx
 # CMD supervisorctl restart nginx

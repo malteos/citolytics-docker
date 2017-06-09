@@ -38,6 +38,7 @@ services:
     volumes:
       # needs chmod 777
       - ./mysql_data:/var/lib/mysql
+      - ./mediawiki:/var/www/public/mediawiki
     environment:
       - MYSQL_ROOT_PASSWORD=password
       - MYSQL_DATABASE=mediawiki
