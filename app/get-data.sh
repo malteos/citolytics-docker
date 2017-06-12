@@ -1,5 +1,14 @@
 #!/bin/bash
 
+
+# wiki=de
+# export CIRRUS_DUMP_URL="https://dumps.wikimedia.org/other/cirrussearch/20170529/dewiki-20170529-cirrussearch-content.json.gz"
+# export CITOLYTICS_DUMP_URL="http://citolytics-demo.wmflabs.org/dumps/citolytics_dewiki.json.gz"
+#
+# wiki=en
+# export CIRRUS_DUMP_URL="https://dumps.wikimedia.org/other/cirrussearch/20170529/simplewiki-20170529-cirrussearch-content.json.gz"
+# export CITOLYTICS_DUMP_URL="http://citolytics-demo.wmflabs.org/dumps/citolytics_enwiki.json.gz"
+
 set -e
 
 : ${ES_HOST:=es}

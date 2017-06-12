@@ -4,7 +4,7 @@
 
 // Logo
 $wgLogo = "$wgResourceBasePath/resources/assets/graph-logo.png";
-
+$wgEnableUploads = true;
 
 // EventLogging
 require_once "$IP/extensions/EventLogging/EventLogging.php";

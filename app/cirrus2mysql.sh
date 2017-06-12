@@ -3,6 +3,8 @@
 # Parse CirrusSearch dump and insert pages to MediaWiki MySQL database
 # USAGE: ./cirrus2mysql.sh /path/to/cirrus_dump.json
 
+# TODO Use SQL dumps instead if source_text is used?
+
 DB_SERVER=$MEDIAWIKI_DB_SERVER
 DB_USER="mediawiki" #$MEDIAWIKI_DB_USER
 DB_PASSWORD="mediawiki" #$MEDIAWIKI_DB_USER
@@ -30,6 +32,8 @@ while IFS='' read -r line || [[ -n "$line" ]]; do
                 TITLE=$(printf '%q' $TITLE) # escape double quotes
 
                 TEXT="Dummy text for $TITLE"
+                #TEXT=`echo ${line} | jq -r '.text'`
+                #TEXT=$(printf '%q' $TEXT) # escape double quotes
                 LEN=${#TEXT}
 
                 page_values="($ID, \"$TITLE\", 1, RAND(), $TS, $TS, $ID, $LEN, \"wikitext\")"

@@ -12,6 +12,7 @@ set -e
 : ${MEDIAWIKI_DB_NAME:=mediawiki}
 : ${MEDIAWIKI_DB_USER:=root}
 : ${MEDIAWIKI_DB_PASSWORD:=password}
+: ${CITOLYTICS_PATCH:=11}
 
 # Install EventLogging dependices
 pip install -r /eventlogging/requirements.txt
@@ -59,7 +60,7 @@ do
 done
 
 # Use Citolytics patch for CirrusSearch
-cd $MEDIAWIKI_DIR/extensions/CirrusSearch && git fetch https://gerrit.wikimedia.org/r/mediawiki/extensions/CirrusSearch refs/changes/26/329626/8 && git checkout FETCH_HEAD
+cd $MEDIAWIKI_DIR/extensions/CirrusSearch && git fetch https://gerrit.wikimedia.org/r/mediawiki/extensions/CirrusSearch refs/changes/26/329626/$CITOLYTICS_PATCH && git checkout FETCH_HEAD
 
 # EventLogging server
 cd $MEDIAWIKI_DIR/extensions/EventLogging/server && git submodule update --init
