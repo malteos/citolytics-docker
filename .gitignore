@@ -1,4 +1,5 @@
-/es_data
-/mysql_data
 /mediawiki
 /eventlogging/env
+.idea
+.ipynb_checkpoints
+/data
