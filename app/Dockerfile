@@ -8,7 +8,7 @@ RUN set -x; \
   apt-get update \
   && apt-get install -y less vim python-pip libmysqlclient-dev jq mysql-client
 
-ENV WEBROOT /var/www/
+ENV WEBROOT /var/www/public
 ENV MEDIAWIKI_DIR /var/www/public/mediawiki
 
 # REL1_29 REL1_28
@@ -22,9 +22,11 @@ COPY ./conf/nginx/vhost.conf /opt/docker/etc/nginx/vhost.conf
 
 COPY ./conf/mediawiki/CustomSettings.php $WEBROOT/CustomSettings.php
 
-COPY get-data.sh /get-data.sh
-COPY cirrus2mysql.sh /cirrus2mysql.sh
-COPY graph-logo.png $MEDIAWIKI_DIR/resources/assets/graph-logo.png
+COPY ./scripts /scripts
+
+#get-data.sh /get-data.sh
+#COPY cirrus2mysql.sh /cirrus2mysql.sh
+COPY ./www $WEBROOT
 
 # Restart nginx
 # CMD supervisorctl restart nginx
@@ -34,8 +36,8 @@ COPY graph-logo.png $MEDIAWIKI_DIR/resources/assets/graph-logo.png
 # RUN chown elasticsearch:elasticsearch config/elasticsearch.yml
 # USER elasticsearch
 
-COPY docker-entrypoint.sh /entrypoint.sh
+#COPY docker-entrypoint.sh /entrypoint.sh
 #ENTRYPOINT ["/entrypoint.sh"]
-CMD /entrypoint.sh
+RUN /scripts/install_mediawiki.sh
 
-CMD ["supervisord"]
+#CMD ["supervisord"]

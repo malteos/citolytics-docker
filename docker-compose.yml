@@ -9,11 +9,10 @@ services:
       - "80:80"
     links:
       - mysql
-      #- es
+      - es
     volumes:
-      # Inject our specific settings
       - ./mediawiki:/var/www/public/mediawiki
-      - ./eventlogging:/eventlogging
+      #- ./eventlogging:/eventlogging
 
     environment:
       - MEDIAWIKI_SITE_NAME=CitolyticsDemo
@@ -22,30 +21,40 @@ services:
       - MEDIAWIKI_ADMIN_PASS=citolytics
       - MEDIAWIKI_DB_SERVER=mysql
       - MEDIAWIKI_DB_NAME=mediawiki
-      - MEDIAWIKI_DB_USER=root
-      - MEDIAWIKI_DB_PASSWORD=password
+      - MEDIAWIKI_DB_USER=mediawiki
+      - MEDIAWIKI_DB_PASSWORD=mediawiki
       - MEDIAWIKI_OVERRIDE=false
 
       - ES_HOST=es
       - BATCH_SIZE=1000
 
-    networks:
-      - backend
+    # networks:
+    #   - backend
+
+  eval:
+    container_name: eval
+    build: ./evaluation
+    ports:
+      - "8888:8888"
+    links:
+      - mysql
+    volumes:
+      - ./data/eval:/home/jovyan/work
 
   mysql:
     container_name: mysql
     image: mariadb
     volumes:
       # needs chmod 777
-      - ./mysql_data:/var/lib/mysql
+      - ./data/mysql:/var/lib/mysql
       - ./mediawiki:/var/www/public/mediawiki
     environment:
       - MYSQL_ROOT_PASSWORD=password
       - MYSQL_DATABASE=mediawiki
       - MYSQL_USER=mediawiki
       - MYSQL_PASSWORD=mediawiki
-    networks:
-      - backend
+    # networks:
+    #   - backend
 
   es:
     container_name: es
@@ -61,9 +70,10 @@ services:
 
     volumes:
       # chmod 777 the es_data directory so ES can write
-      - ./es_data:/usr/share/elasticsearch/data
-    networks:
-      - backend
+      - ./data/es:/usr/share/elasticsearch/data
+    # networks:
+    #   - backend
+
 
 networks:
   backend:

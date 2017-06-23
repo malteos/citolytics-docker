@@ -11,7 +11,7 @@ Containerized [MediaWiki](https://mediawiki.org) setup + [Citolytics](https://gi
 Run the following commands (as root) and afterwards the MediaWiki will be available at `http://localhost` (port 80):
 
 ```
-git clone https://github.com/mschwarzer/citolytics-docker
+git clone https://github.com/mschwarzer/citolytics-docker.git
 cd citolytics-docker
 mkdir es_data
 chmod 777 -R es_data eventlogging
@@ -21,7 +21,7 @@ sudo docker-compose up
 ## Download and import Wikipedia and Citolytics data
 
 ```
-docker run -it mediawiki /get-data.sh
+docker run -it mediawiki /scripts/get-data.sh
 ```
 
 ## Import EventLogging data

@@ -3,7 +3,7 @@
 // append to LocalSettings.php
 
 // Logo
-$wgLogo = "$wgResourceBasePath/resources/assets/graph-logo.png";
+$wgLogo = "/logo.png";
 $wgEnableUploads = true;
 
 // EventLogging
@@ -42,3 +42,11 @@ require_once "$IP/extensions/Wikibase/client/ExampleSettings.php";
 
 wfLoadExtension( 'MobileFrontend' );
 $wgMFAutodetectMobileView = true;
+
+// Debug
+#error_reporting( -1 );
+#ini_set( 'display_errors', 1 );
+$wgDebugToolbar = true;
+#$wgShowDebug = true;
+#$wgDevelopmentWarnings = true;
+$wgShowExceptionDetails = true;
