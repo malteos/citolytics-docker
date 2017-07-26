@@ -6,7 +6,7 @@ FROM webdevops/php-nginx:ubuntu-16.04
 #
 RUN set -x; \
   apt-get update \
-  && apt-get install -y less vim python-pip libmysqlclient-dev jq mysql-client
+  && apt-get install -y less vim python-pip python-dev libssl-dev libmysqlclient-dev jq mysql-client
 
 ENV WEBROOT /var/www/public
 ENV MEDIAWIKI_DIR /var/www/public/mediawiki
@@ -38,6 +38,8 @@ COPY ./www $WEBROOT
 
 #COPY docker-entrypoint.sh /entrypoint.sh
 #ENTRYPOINT ["/entrypoint.sh"]
-RUN /scripts/install_mediawiki.sh
+
+# Cannot run install script (mysql, es are not avaialable at this stage)
+#RUN /scripts/install_mediawiki.sh
 
 #CMD ["supervisord"]

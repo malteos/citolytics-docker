@@ -107,4 +107,7 @@ if __name__ == '__main__':
                 print('%s - %i' % (datetime.datetime.now(), counter))
             counter += 1
 
+    # TODO Compare COUNT(*) with counter
+    #print('validating ...')
+
     print('done')

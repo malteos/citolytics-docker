@@ -13,8 +13,7 @@ Run the following commands (as root) and afterwards the MediaWiki will be availa
 ```
 git clone https://github.com/mschwarzer/citolytics-docker.git
 cd citolytics-docker
-mkdir es_data
-chmod 777 -R es_data eventlogging
+mkdir -p data/es; chmod 777 data/es
 sudo docker-compose up
 ```
 
@@ -34,3 +33,7 @@ docker run -it mediawiki /eventlogging/process_logs.py --db-host mysql
 ## TODO
 
 - Tests
+
+## License
+
+MIT

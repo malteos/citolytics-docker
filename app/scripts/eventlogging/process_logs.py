@@ -2,7 +2,7 @@
 """Citolytics - EventLogging Processor.
 
 Usage:
-    process_logs.py [--path=<path>] [--db-host=<hostname>] [--db-user=<username>] [--db-password=<password>] [--db-name=<database>] [--demo] [--verbose]
+    process_logs.py [--path=<path>] [--db-host=<hostname>] [--db-user=<username>] [--db-password=<password>] [--db-name=<database>] [--override] [--demo] [--verbose]
     process_logs.py (-h | --help)
     process_logs.py --version
 
@@ -13,6 +13,7 @@ Options:
     --db-name=<database>     Database [default: mediawiki]
     --path=<path>           Path to log file. [default: /var/log/nginx/events.log]
     --demo                  Generate random event log data
+    --override                 Recreate tables before inserting new data
     --verbose               Show verbose debugging messages
     -h --help               Show this screen.
     --version               Show version.
@@ -51,15 +52,61 @@ if __name__ == '__main__':
 
     proc = LogProcessor()
 
+    def send_query(cur, query):
+        if isinstance(query, basestring):
+            cur.execute(query)
+            return cur.rowcount
+        else:
+            rowcount = 0
+            for q in query:  # multiple queries
+                cur.execute(q)
+                rowcount += cur.rowcount
+            return rowcount
+
     def insert_MobileWikiAppArticleSuggestions(timestamp, event):
-        return 'INSERT INTO MobileWikiAppArticleSuggestions SET ' \
+        if event['action'] == 'clicked' and 'readMoreIndex' in event:
+            clickIndex = event['readMoreIndex']
+        else:
+            clickIndex = 'NULL'
+
+        if event['action'] == 'shown' and 'latency' in event:
+            latency = '%i' % event['latency']
+        else:
+            latency = 'NULL'
+
+        readMoreList = event['readMoreList']
+
+        queries = [
+            'INSERT INTO MobileWikiAppArticleSuggestions SET ' \
             '`timestamp`="' + timestamp + '", ' \
             '`pageTitle`="' + str(event['pageTitle']) + '", ' \
-            '`readMoreList`="' + str(event['readMoreList']) + '", ' \
-            '`readMoreIndex`="' + str(event['readMoreIndex']) + '", ' \
+            '`readMoreList`="' + readMoreList + '", ' \
+            '`readMoreIndex`=' + str(clickIndex) + ', ' \
             '`appInstallID`="' + hashlib.md5(event['appInstallID']).hexdigest() + '", ' \
+            '`readMoreSource`="' + str(event['readMoreSource']) + '", ' \
             '`action`="' + str(event['action']) + '", ' \
-            '`latency`="' + str(event['latency']) + '"'
+            '`latency`=' + latency + ''
+            ]
+
+        if readMoreList != '':
+            readMoreItems = readMoreList.split('|')
+            for k, item in enumerate(readMoreItems):
+                if event['action'] == 'clicked' and clickIndex == k:
+                    clicked = 1
+                else:
+                    clicked = 0
+
+                queries.append(
+                    'INSERT INTO MobileWikiAppArticleSuggestions_items SET ' \
+                                '`timestamp`="' + timestamp + '", ' \
+                                '`pageTitle`="' + str(event['pageTitle']) + '", ' \
+                                '`readMoreItem`="' + item + '", ' \
+                                '`clicked`=' + str(clicked) + ', ' \
+                                '`appInstallID`="' + hashlib.md5(event['appInstallID']).hexdigest() + '", ' \
+                                '`readMoreSource`="' + str(event['readMoreSource']) + '", ' \
+                                '`action`="' + str(event['action']) + '" '
+                                )
+        return queries
 
     def insert_MobileWikiAppPageScroll(timestamp, event):
         return 'INSERT INTO MobileWikiAppPageScroll SET ' \
@@ -95,17 +142,30 @@ if __name__ == '__main__':
 
     schemas = {
         'MobileWikiAppArticleSuggestions': {
-            'create_sql': 'CREATE TABLE IF NOT EXISTS `MobileWikiAppArticleSuggestions` (' \
-                '`timestamp` DATETIME, ' \
-                '`action` ENUM("shown", "clicked"), ' \
-                '`readMoreList` VARCHAR(255), ' \
-                '`readMoreIndex` INT, ' \
-                '`readMoreSoure` INT, ' \
-                '`latency` INT, ' \
-                '`appInstallID` VARCHAR(100) NOT NULL, ' \
-                '`pageTitle` VARCHAR(255) NOT NULL, ' \
-                'PRIMARY KEY(`timestamp`, `pageTitle`, `appInstallID`) )',
+            'create_sql':
+                'CREATE TABLE IF NOT EXISTS `MobileWikiAppArticleSuggestions` (' \
+                    '`timestamp` DATETIME, ' \
+                    '`action` ENUM("shown", "clicked"), ' \
+                    '`readMoreList` VARCHAR(255), ' \
+                    '`readMoreIndex` INT default NULL, ' \
+                    '`readMoreSource` INT, ' \
+                    '`latency` INT default NULL, ' \
+                    '`appInstallID` VARCHAR(100) NOT NULL, ' \
+                    '`pageTitle` VARCHAR(255) NOT NULL, ' \
+                    'PRIMARY KEY(`timestamp`, `pageTitle`, `appInstallID`) )',
             'insert_sql': insert_MobileWikiAppArticleSuggestions
+        },
+        'MobileWikiAppArticleSuggestions_items': {
+            'create_sql':
+                'CREATE TABLE IF NOT EXISTS `MobileWikiAppArticleSuggestions_items` (' \
+                    '`timestamp` DATETIME, ' \
+                    '`action` ENUM("shown", "clicked"), ' \
+                    '`readMoreItem` VARCHAR(255), ' \
+                    '`clicked` TINYINT(1), ' \
+                    '`readMoreSource` INT, ' \
+                    '`appInstallID` VARCHAR(100) NOT NULL, ' \
+                    '`pageTitle` VARCHAR(255) NOT NULL, ' \
+                    'PRIMARY KEY(`timestamp`, `pageTitle`, `readMoreItem`, `appInstallID`) )'
         },
         'MobileWikiAppPageScroll': {
             'create_sql': 'CREATE TABLE IF NOT EXISTS `MobileWikiAppPageScroll` (' \
@@ -152,18 +212,27 @@ if __name__ == '__main__':
         proc.logger.setLevel(logging.DEBUG)
 
     # format (from nginx config): '$time_iso8601|$query_string';
-    log_path = '/var/log/nginx/events.log'
+
+    log_path = args['--path'] # '/var/log/nginx/events.log'
 
     # Create event tables
     for schema_key in schemas:
-        cur.execute(schemas[schema_key]['create_sql'])
+        if args['--override']:
+            send_query(cur, 'DROP TABLE `' + schema_key + '`')
+
+        send_query(cur, schemas[schema_key]['create_sql'])
 
     # Insert events
+    print('Reading from: %s' % log_path)
+    insert_counter = 0
     with open(log_path, 'r') as lines:
         for line in lines:
             cols = line.strip().split('|')
 
-            if len(cols) == 2:
+            try:
+                if len(cols) != 2:
+                    raise ValueError('Invalid column length')
+
                 timestamp = cols[0] # datetime.datetime.strptime(cols[0], "%Y-%m-%dT%H:%M:%S")
                 event = json.loads(urllib.unquote(cols[1]))
 
@@ -171,11 +240,12 @@ if __name__ == '__main__':
                     continue
 
                 schema = schemas[event['schema']]
-                query = schema['insert_sql'](timestamp, event['event'])
-                cur.execute(query)
 
-            else:
-                raise ValueError('Invalid log line: %s' % line)
+                insert_counter += send_query(cur, schema['insert_sql'](timestamp, event['event']))
+
+            except (KeyError, ValueError) as e:
+                raise ValueError('Invalid log line. Error: %s; Line: %s' % (e, line))
 
             #print(cols)
-    print('done')
+    db.commit()
+    print('done. inserted %i rows' % insert_counter)

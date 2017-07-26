@@ -18,6 +18,7 @@ set -e
 pip install -r /scripts/eventlogging/requirements.txt
 
 # MediaWiki exists already?
+# TODO Better check if dir is empty?
 if [ -d "$MEDIAWIKI_DIR" ]; then
   # Control will enter here if $DIRECTORY exists.
   if [ "$MEDIAWIKI_OVERRIDE" == true ]; then

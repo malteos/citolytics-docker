@@ -1,0 +1,10 @@
+
+# A lie, but that shouldn't matter.
+language: c
+
+services:
+  - docker
+
+sudo: required
+
+script: sudo ./test.sh
