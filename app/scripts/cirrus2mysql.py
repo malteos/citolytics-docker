@@ -48,6 +48,10 @@ if __name__ == '__main__':
     cur.execute('DELETE FROM text WHERE old_id > 1')
     db.commit()
 
+    pages_count = 0
+    revisions_count = 0
+    texts_count = 0
+
     print('Done - importing new pages...')
 
     with io.open(cirrus_filename, 'r', encoding='utf-8') as lines:
@@ -91,10 +95,16 @@ if __name__ == '__main__':
                     query_text += ', ' + text_values
 
                 if counter % batch_size == 0:
-                    # send query
+                    # send query and count affected rows
                     cur.execute(query_page)
+                    pages_count += cur.rowcount
+
                     cur.execute(query_rev)
+                    revisions_count += cur.rowcount
+
                     cur.execute(query_text)
+                    texts_count += cur.rowcount
+
                     db.commit()
 
                     query_rev = None
@@ -110,4 +120,4 @@ if __name__ == '__main__':
     # TODO Compare COUNT(*) with counter
     #print('validating ...')
 
-    print('done')
+    print('Done - pages=%i, revs=%i, texts=%i' % (pages_count, revisions_count, texts_count))

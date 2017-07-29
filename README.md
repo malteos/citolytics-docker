@@ -1,6 +1,8 @@
 # Docker Container for Citolytics (WIP)
 
-Containerized [MediaWiki](https://mediawiki.org) setup + [Citolytics](https://github.com/wikimedia/citolytics) demo. ***WARNING:*** This container is still under development.
+***WARNING:*** This container is still under development.
+
+Containerized [MediaWiki](https://mediawiki.org) setup + [Citolytics](https://github.com/wikimedia/citolytics) demo.
 
 ## Requirements
 

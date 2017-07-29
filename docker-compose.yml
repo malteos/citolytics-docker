@@ -40,6 +40,8 @@ services:
       - mysql
     volumes:
       - ./data/eval:/home/jovyan/work
+    environment:
+      - PASSWORD=citolytics
 
   mysql:
     container_name: mysql
