@@ -1,0 +1,6 @@
+docopt
+MySQL-python
+sender
+yagmail
+requests
+python-dateutil

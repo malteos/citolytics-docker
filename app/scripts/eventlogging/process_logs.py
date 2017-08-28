@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 """Citolytics - EventLogging Processor.
 
 Usage:
@@ -25,7 +26,10 @@ import json
 import datetime
 import urllib
 import hashlib
+import io
+import time
 
+import dateutil.parser
 from docopt import docopt
 import MySQLdb
 from _mysql_exceptions import OperationalError
@@ -53,21 +57,32 @@ if __name__ == '__main__':
     proc = LogProcessor()
 
     def send_query(cur, query):
-        if isinstance(query, basestring):
-            cur.execute(query)
+
+        if type(query) is tuple:
+            # Query with args
+            sql, args = query
+
+            if args is None:
+                cur.execute(sql)
+            else:
+                cur.execute(sql, args)
+
             return cur.rowcount
-        else:
+        elif type(query) is list:
             rowcount = 0
             for q in query:  # multiple queries
-                cur.execute(q)
-                rowcount += cur.rowcount
+                rowcount += send_query(cur, q)
             return rowcount
+        else:
+            # Plain query (as string)
+            cur.execute(query)
+            return cur.rowcount
 
     def insert_MobileWikiAppArticleSuggestions(timestamp, event):
         if event['action'] == 'clicked' and 'readMoreIndex' in event:
             clickIndex = event['readMoreIndex']
         else:
-            clickIndex = 'NULL'
+            clickIndex = None # 'NULL'
 
         if event['action'] == 'shown' and 'latency' in event:
             latency = '%i' % event['latency']
@@ -77,16 +92,21 @@ if __name__ == '__main__':
         readMoreList = event['readMoreList']
 
         queries = [
-            'INSERT INTO MobileWikiAppArticleSuggestions SET ' \
-            '`timestamp`="' + timestamp + '", ' \
-            '`pageTitle`="' + str(event['pageTitle']) + '", ' \
-            '`readMoreList`="' + readMoreList + '", ' \
-            '`readMoreIndex`=' + str(clickIndex) + ', ' \
-            '`appInstallID`="' + hashlib.md5(event['appInstallID']).hexdigest() + '", ' \
-            '`readMoreSource`="' + str(event['readMoreSource']) + '", ' \
-            '`action`="' + str(event['action']) + '", ' \
-            '`latency`=' + latency + ''
+            ('INSERT INTO MobileWikiAppArticleSuggestions SET ' \
+            '`timestamp`=%s, ' \
+            '`pageTitle`=%s, ' \
+            '`readMoreList`=%s, ' \
+            '`readMoreIndex`=%s, ' \
+            '`appInstallID`=%s, ' \
+            '`readMoreSource`=%s, ' \
+            '`action`=%s, ' \
+            '`latency`=%s',
+
+             (timestamp, event['pageTitle'], readMoreList, clickIndex, hashlib.md5(event['appInstallID']).hexdigest(), event['readMoreSource'], event['action'], latency)
+
+             )
             ]
+
 
         if readMoreList != '':
             readMoreItems = readMoreList.split('|')
@@ -97,48 +117,56 @@ if __name__ == '__main__':
                     clicked = 0
 
                 queries.append(
-                    'INSERT INTO MobileWikiAppArticleSuggestions_items SET ' \
-                                '`timestamp`="' + timestamp + '", ' \
-                                '`pageTitle`="' + str(event['pageTitle']) + '", ' \
-                                '`readMoreItem`="' + item + '", ' \
-                                '`clicked`=' + str(clicked) + ', ' \
-                                '`appInstallID`="' + hashlib.md5(event['appInstallID']).hexdigest() + '", ' \
-                                '`readMoreSource`="' + str(event['readMoreSource']) + '", ' \
-                                '`action`="' + str(event['action']) + '" '
-                                )
+                    (
+                        'INSERT INTO MobileWikiAppArticleSuggestions_items SET '
+                        '`timestamp`=%s, `pageTitle`=%s, '
+                        '`readMoreItem`=%s, `clicked`=%s, '
+                        '`appInstallID`=%s, `readMoreSource`=%s, `action`=%s ',
+                        (
+                            timestamp, event['pageTitle'], item, clicked, hashlib.md5(event['appInstallID']).hexdigest(),
+                            event['readMoreSource'], event['action']
+                        )
+                    )
+                )
         return queries
 
     def insert_MobileWikiAppPageScroll(timestamp, event):
-        return 'INSERT INTO MobileWikiAppPageScroll SET ' \
-            '`timestamp`="' + timestamp + '", ' \
-            '`pageID`="' + str(event['pageID']) + '", ' \
-            '`pageHeight`="' + str(event['pageHeight']) + '", ' \
-            '`maxPercentViewed`="' + str(event['maxPercentViewed']) + '", ' \
-            '`appInstallID`="' + hashlib.md5(event['appInstallID']).hexdigest() + '", ' \
-            '`timeSpent`="' + str(event['timeSpent']) + '"'
+        return (
+            'INSERT INTO MobileWikiAppPageScroll SET '
+            '`timestamp`=%s, `pageID`=%s, `pageHeight`=%s, `maxPercentViewed`=%s, '
+            '`appInstallID`=%s, `timeSpent`=%s',
+            (
+                timestamp, event['pageID'], event['pageHeight'], event['maxPercentViewed'],
+                hashlib.md5(event['appInstallID']).hexdigest(), event['timeSpent']
+            )
+        )
 
     def insert_MobileWikiAppSessions(timestamp, event):
         return 'INSERT INTO MobileWikiAppSessions SET ' \
-            '`timestamp`="' + timestamp + '", ' \
-            '`appInstallID`="' + hashlib.md5(event['appInstallID']).hexdigest() + '", ' \
-            '`length`="' + str(event['length']) + '", ' \
-            '`totalPages`="' + str(event['totalPages']) + '", ' \
-            '`fromSearch`="' + str(event['fromSearch']) + '", ' \
-            '`fromRandom`="' + str(event['fromRandom']) + '", ' \
-            '`fromLanglink`="' + str(event['fromLanglink']) + '", ' \
-            '`fromInternal`="' + str(event['fromInternal']) + '", ' \
-            '`fromExternal`="' + str(event['fromExternal']) + '", ' \
-            '`fromHistory`="' + str(event['fromHistory']) + '", ' \
-            '`fromReadingList`="' + str(event['fromReadingList']) + '", ' \
-            '`fromNearby`="' + str(event['fromNearby']) + '", ' \
-            '`fromDisambig`="' + str(event['fromDisambig']) + '", ' \
-            '`fromBack`="' + str(event['fromBack']) + '"'
+            '`timestamp`=%s, ' \
+            '`appInstallID`=%s, ' \
+            '`length`=%s, ' \
+            '`totalPages`=%s, ' \
+            '`fromSearch`=%s, ' \
+            '`fromRandom`=%s, ' \
+            '`fromLanglink`=%s, ' \
+            '`fromInternal`=%s, ' \
+            '`fromExternal`=%s, ' \
+            '`fromHistory`=%s, ' \
+            '`fromReadingList`=%s, ' \
+            '`fromNearby`=%s, ' \
+            '`fromDisambig`=%s, ' \
+            '`fromBack`=%s', \
+               (timestamp, hashlib.md5(event['appInstallID']).hexdigest(), event['length'], event['totalPages'],
+                event['fromSearch'], event['fromRandom'], event['fromLanglink'], event['fromInternal'], event['fromExternal'],
+                event['fromHistory'], event['fromReadingList'], event['fromNearby'], event['fromDisambig'], event['fromBack'])
+
 
     def insert_MobileAppShareAttempts(timestamp, event):
-        return 'INSERT INTO MobileAppShareAttempts SET ' \
-            '`timestamp`="' + timestamp + '", ' \
-            '`username`="' + hashlib.md5(event['username']).hexdigest() + '", ' \
-            '`filename`="' + str(event['filename']) + '"'
+        return ('INSERT INTO MobileAppShareAttempts SET ' \
+            '`timestamp`=%s, ' \
+            '`username`=%s, ' \
+            '`filename`=%s', (timestamp, hashlib.md5(event['username']).hexdigest(), event['filename']))
 
     schemas = {
         'MobileWikiAppArticleSuggestions': {
@@ -218,34 +246,40 @@ if __name__ == '__main__':
     # Create event tables
     for schema_key in schemas:
         if args['--override']:
-            send_query(cur, 'DROP TABLE `' + schema_key + '`')
+            send_query(cur, 'DROP TABLE IF EXISTS`' + schema_key + '`')
 
         send_query(cur, schemas[schema_key]['create_sql'])
 
     # Insert events
     print('Reading from: %s' % log_path)
     insert_counter = 0
-    with open(log_path, 'r') as lines:
+    enc='utf-8'
+
+    #with open(log_path, 'r', encoding=enc) as lines:
+    with io.open(log_path, 'r', encoding=enc) as lines:
         for line in lines:
             cols = line.strip().split('|')
 
-            try:
-                if len(cols) != 2:
-                    raise ValueError('Invalid column length')
+            #try:
+            if len(cols) != 2:
+                raise ValueError('Invalid column length')
 
-                timestamp = cols[0] # datetime.datetime.strptime(cols[0], "%Y-%m-%dT%H:%M:%S")
-                event = json.loads(urllib.unquote(cols[1]))
+            if cols[1] == '-':  # Ignore empty lines
+                continue
 
-                if event['schema'] not in schemas:
-                    continue
+            timestamp = dateutil.parser.parse(cols[0]).strftime('%Y-%m-%d %H:%M:%S')  # datetime.datetime.strptime(cols[0], "%Y-%m-%dT%H:%M:%S")
+            event = json.loads(urllib.unquote(cols[1]))
 
-                schema = schemas[event['schema']]
+            if event['schema'] not in schemas:
+                continue
 
-                insert_counter += send_query(cur, schema['insert_sql'](timestamp, event['event']))
+            schema = schemas[event['schema']]
 
-            except (KeyError, ValueError) as e:
-                raise ValueError('Invalid log line. Error: %s; Line: %s' % (e, line))
-
-            #print(cols)
+            insert_counter += send_query(cur, schema['insert_sql'](timestamp, event['event']))
     db.commit()
     print('done. inserted %i rows' % insert_counter)
+
+
+#except (KeyError, ValueError) as e:
+#    raise ValueError('Invalid log line. Error: %s; Line: %s' % (e, line))
+#print(cols)

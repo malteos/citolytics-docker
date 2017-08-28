@@ -1,3 +1,0 @@
-docopt
-MySQL-python
-sender

@@ -23,6 +23,21 @@ Notes:
     - Empty ES index: $ curl -XPOST es:9200/mediawiki_content_first/page/_delete_by_query?pretty -d '{"query": {"match_all": {}}}'
     - Count docs: $ curl -XPOST es:9200/mediawiki_content_first/page/_count?pretty
 
+    - Wiki pages
+        - dewiki:       2.084.811
+            - mysql:    2.066.400
+            - es:       2.068.443
+            - import
+                - update (json=2.012.009)
+
+        - simplewiki:   126.731
+            - mysql:    125.186
+            - es:       125.235
+            - json:     125.235
+            - import
+                - index -- Success: 125.235, Errors: 0
+                - update -- Success: 121.847, Errors: 59
+
 """
 import datetime
 import io
@@ -31,20 +46,30 @@ import sys
 import requests
 import os.path
 import time
-
+import subprocess
 from docopt import docopt
 
 #offset = 2814900 # 2175000 # 4136800  # 0
-batch_size = 100
-remove_source_text = False # True
+batch_size = 500 # 40
+remove_source_text = True # False # True
 sleep_time = 5
-sleep_n = 1000
+sleep_n = 2500
+enable_es_restart = False
 
 flush_n = 10000
 flush_time = 30
 
 es_host = 'localhost'
 
+def restart_es():
+    es = subprocess.Popen(["service", "elasticsearch", "restart"], stdout=subprocess.PIPE)
+    res = es.communicate()[0]
+
+    if 'error' in res or 'ERROR' in res:
+        print('Could not restart ES: %s' % res)
+	exit(1)
+    else:
+        print('ES restarted')
 
 def send_flush():
     flush_url = 'http://' + es_host + ':9200/mediawiki_content_first/_flush'
@@ -53,7 +78,7 @@ def send_flush():
         r = requests.post(flush_url)
 
         if r.status_code != 200:
-            print('ES Error: %s' % r.text)
+            print('ES Error (flush): %s' % r.text)
     except requests.exceptions.RequestException, e:
         print("Failed to send flush: " + str(e))
         exit(1)
@@ -68,6 +93,7 @@ def send_bulk(bulk_data):
     success_count = 0
     response = ''
 
+    #bulk_data = bulk_data.decode('utf-8')
     #print(bulk_data)
     #exit(0)
     try:
@@ -89,6 +115,9 @@ def send_bulk(bulk_data):
 
                 if action['status'] == 200 or action['status'] == 201:
                     success_count += 1
+                elif action['status'] >= 500:
+                    print('Server error: %s' % action)
+                    exit(1)
                 else:
                     error_count += 1
                     print('Error - status=%i, page_id=%s' % (action['status'], action['_id']))
@@ -97,7 +126,8 @@ def send_bulk(bulk_data):
                         print('Other error: %s' % action)
 
         else:
-            print('ES Error: %s' % r.text)
+            print('ES Error: %s;\nRequest:' % (r.text))
+            #print(bulk_data)
 
     except requests.exceptions.RequestException, e:
         print("Failed to send bulk: " + str(e))
@@ -117,10 +147,14 @@ def import_file(filename, counter=0, offset=0):
 
     total_success_count = 0
     total_error_count = 0
-
+    enc='utf-8'
+    #enc='iso-8859-15'
     batch_data = ''
-    with io.open(filename, 'r', encoding='utf-8') as lines:
+    with io.open(filename, 'r', encoding=enc) as lines: # , encoding='utf-8')
         for line in lines:
+            #print(line)
+            #continue
+
             if counter < offset:
                 #print('Skip %i' % counter)
                 counter += 1
@@ -128,7 +162,7 @@ def import_file(filename, counter=0, offset=0):
 
             if counter % 2 == 0:
                 # action line
-                batch_data += line.encode('utf-8')
+                batch_data += line.encode(enc) #.encode('utf-8')
             else:
                 # doc line
                 if remove_source_text:
@@ -139,7 +173,7 @@ def import_file(filename, counter=0, offset=0):
 
                     batch_data += json.dumps(doc) + '\n'
 		else:
-                    batch_data += line.encode('utf-8')
+                    batch_data += line.encode(enc) #.encode('utf-8')
 
             counter += 1
 
@@ -158,6 +192,11 @@ def import_file(filename, counter=0, offset=0):
             if counter % flush_n == 0:
                 send_flush()
                 time.sleep(flush_time)
+
+
+            if enable_es_restart and counter % (flush_n * 3) == 0:
+                restart_es()
+                time.sleep(flush_time * 3)
 
     if batch_data != '':
         res, success_count, error_count = send_bulk(batch_data)
@@ -179,6 +218,8 @@ if __name__ == '__main__':
     es_host = args['--host']
     flush_time = int(args['--flush'])
     sleep_time = int(args['--sleep'])
+
+    print('Starting ...')
 
     if not os.path.exists(filename):
         print('File does not exist: %s' % filename)
