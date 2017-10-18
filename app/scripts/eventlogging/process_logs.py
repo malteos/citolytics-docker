@@ -33,6 +33,7 @@ import dateutil.parser
 from docopt import docopt
 import MySQLdb
 from _mysql_exceptions import OperationalError
+from _mysql_exceptions import IntegrityError
 
 class LogProcessor(object):
     def __init__(self):
@@ -275,7 +276,10 @@ if __name__ == '__main__':
 
             schema = schemas[event['schema']]
 
-            insert_counter += send_query(cur, schema['insert_sql'](timestamp, event['event']))
+            try:
+                insert_counter += send_query(cur, schema['insert_sql'](timestamp, event['event']))
+            except IntegrityError as e:
+                print('IntegrityError for %s: %s' % (event['event'], e))
     db.commit()
     print('done. inserted %i rows' % insert_counter)
 

@@ -29,13 +29,13 @@ docker run -it mediawiki /scripts/get-data.sh
 
 This following command runs the EventLogging parser script in the MediaWiki container and sends the date to the MySQL container.
 ```
-docker run -it mediawiki python /scripts/eventlogging/process_logs.py --db-host mysql --override
+sudo docker run -it mediawiki python /scripts/eventlogging/process_logs.py --db-host mysql --override
 ```
 
 ## Copy EventLogging data from container (run as cron)
 
 ```
-docker cp mediawiki:/var/log/nginx/events.log /srv/wikisim/events.log.$(date +%s)
+sudo docker cp mediawiki:/var/log/nginx/events.log /srv/wikisim/events.log.$(date +%s)
 ```
 
 ## TODO

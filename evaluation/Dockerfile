@@ -8,6 +8,6 @@ RUN set -x; \
 
 USER $NB_USER
 
-RUN pip2 install mysql-python tabulate --user
+RUN pip2 install mysql-python tabulate matplotlib scipy pandas numpy --user
 
 USER root
